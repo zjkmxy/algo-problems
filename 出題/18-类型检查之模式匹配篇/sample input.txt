@@ -1,0 +1,19 @@
+0
+2
+(_, _)
+17
+
+
+1
+type dt01 = con1 | con2 of int | con3 of dt01
+4
+_
+con1
+con2 v
+con3 con3 con2 x
+
+
+2
+type x = z of y
+type y = w of x
+0

@@ -1,0 +1,6 @@
+B: 2
+total: 11
+B: 0
+total: 0
+B: 8
+total: 31

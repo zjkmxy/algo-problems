@@ -1,0 +1,221 @@
+在n*m的矩阵中，有些格子有树，没有树的格子不能到达，找一条或多条回路，吃完所有的树，求有多少中方法。
+==========================================================
+先手：（抄的）
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+__int64 f[12][12][1<<12];
+long     r,c;
+long     map[12][12];
+void     read(){
+	long i,j;
+	scanf("%ld%ld",&r,&c);
+	for(i=1;i<=r;i++)
+		for(j=1;j<=c;j++)
+			scanf("%ld",&map[i][j]);
+}
+void     count(){
+	long i,j,k,p;
+	long x,y;
+	memset(f,0,sizeof(f));
+	f[0][c][0]=1;
+	for(i=0;i<=r;i++){
+		for(j=1;j<=c;j++){
+			if(i==0&&j<c) continue;
+			for(k=0;k<(1<<(c+1));k++)
+				if(f[i][j][k]){
+					if(j==c){           
+						/*情况1：插座换行*/
+						if(i<r){ //不是最后一行
+							p=k>>1;
+							x=p&(1<<c);     //左插头一定是0
+							y=p&(1<<(c-1)); //上插头
+							if(x==0&&y==0){  
+								/*凹角两边均无插头,那么凸起要么都有插头要么都没*/                            
+								if(map[i+1][1]){ //都有插头
+									if(c!=1)
+										f[i+1][1][p-x-y+(1<<c)+(1<<(c-1))]+=f[i][j][k];
+								}
+								else   //地图不允许，都没插头
+									f[i+1][1][p-x-y]+=f[i][j][k];
+							}
+							if(x==0&&y!=0){
+								/*凹角横边有插头，那么凸起要么向下插要么向右插*/
+								if(map[i+1][1]){
+									if(c!=1)
+										f[i+1][1][p-x-y+(1<<(c-1))]+=f[i][j][k]; //右插
+									f[i+1][1][p-x-y+(1<<c)]+=f[i][j][k];         //下插
+								}
+							}
+						}      
+					}else{    
+						/*情况1：插座右行*/
+						p=k;
+						x=p&(1<<(c-j));
+						y=p&(1<<(c-j-1));  
+						if(x==0&&y==0){  //都没有，看要求
+							if(map[i][j+1]){
+								if(j<c-1)
+									f[i][j+1][p-x-y+(1<<(c-j))+(1<<(c-j-1))]+=f[i][j][k];
+							}
+							else
+								f[i][j+1][p-x-y]+=f[i][j][k];
+						}
+						else if(x!=0&&y!=0){ //都有了，就不需要再插了
+							if(map[i][j+1]){
+								f[i][j+1][p-x-y]+=f[i][j][k];
+							}
+						}
+						else{    //有一个，两插一
+							if(map[i][j+1]){
+								if(j<c-1)
+									f[i][j+1][p-x-y+(1<<(c-j-1))]+=f[i][j][k];
+								f[i][j+1][p-x-y+(1<<(c-j))]+=f[i][j][k];
+							}
+						}
+
+					}
+				}
+		}
+	}
+
+	printf(" There are %I64d ways to eat the trees.\n",f[r][c][0]);
+}
+int      main(){
+	long t,i;
+	scanf("%ld",&t);
+	for(i=1;i<=t;i++){
+		printf("Case %ld:",i);
+		read();
+		count();
+	}
+	return 0;
+}
+
+=======================================================================
+后手（自己）：
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef unsigned long long int LINT;
+
+bool map[12][12];      //图块是否可行[行][列]
+LINT dp[12][12][8192]; //方法数[横插座][竖插口][插头状态]
+int n,m;
+
+void input()
+{
+	int cur,i,j;
+
+	scanf("%d %d", &n, &m);
+	for(i=1;i<=n;i++)
+	{
+		for(j=1;j<=m;j++)
+		{
+			scanf("%d",&cur);
+			if(cur == 1)
+				map[i][j] = true;
+			else
+				map[i][j] = false;
+		}
+	}
+}
+
+LINT calc()
+{
+	int i,j,st,st_max; //横插座，竖插口插头状态，最大状态
+	int stb,pld,plr;   //之前的插座状态，下有插否，右有插否
+
+	memset(dp, 0, sizeof(dp));
+	dp[0][m][0] = 1;       //白板一种，其他0种
+	st_max = 1 << (m + 1); //插头能插m+1个
+	for(i=1;i<=n;i++)
+	{
+		for(j=1;j<=m;j++)
+		{
+			for(st=0;st<st_max;st++)
+			{
+				if(j == 1)
+				{
+					//插座换行
+					stb = (st << 1) & (st_max - 1); //最右边不应该有右插头
+					pld = st & (1 << m);
+					plr = st & (1 << (m - 1));
+					if((pld > 0) && (plr > 0))         //都有
+					{
+						if(map[i][j])
+						{
+							dp[i][j][st] = dp[i-1][m][stb & (~(1 << m))];
+						}else{
+							dp[i][j][st] = 0;    //地图不允许
+						}
+					}else if((pld == 0) && (plr == 0)) //都没有
+					{
+						if(map[i][j])
+						{
+							dp[i][j][st] = 0;    //地图不允许
+						}else{
+							dp[i][j][st] = dp[i-1][m][stb & (~(1 << m))];
+						}
+					}else{   //单个
+						if(map[i][j])
+						{
+							dp[i][j][st] = dp[i-1][m][stb | (1 << m)];
+						}else{
+							dp[i][j][st] = 0;    //地图不允许
+						}
+					}
+				}else{
+					//插座平移
+					stb = st;
+					pld = st & (1 << (m - j + 1));
+					plr = st & (1 << (m - j));
+					if((pld > 0) && (plr > 0))         //都有
+					{
+						if(map[i][j])
+						{
+							dp[i][j][st] = dp[i][j - 1][stb - pld - plr];
+						}else{
+							dp[i][j][st] = 0;    //地图不允许
+						}
+					}else if((pld == 0) && (plr == 0)) //都没有
+					{
+						if(map[i][j])
+						{
+							dp[i][j][st] = dp[i][j - 1][stb - pld - plr + (1 << (m - j + 1))  + (1 << (m - j))];
+						}else{
+							dp[i][j][st] = dp[i][j - 1][stb - pld - plr];
+						}
+					}else{   //单个，二插一
+						if(map[i][j])
+						{
+							dp[i][j][st] = dp[i][j - 1][stb - pld - plr + (1 << (m - j + 1))] + dp[i][j - 1][stb - pld - plr + (1 << (m - j))];
+						}else{
+							dp[i][j][st] = 0;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return dp[n][m][0];
+}
+
+int main()
+{
+	int n,i;
+
+	scanf("%d",&n);
+	for(i=0;i<n;i++)
+	{
+		input();
+		printf("Case %ld: There are %I64d ways to eat the trees.\n",i+1,calc());
+	}
+
+	return 0;
+}

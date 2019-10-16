@@ -1,0 +1,194 @@
+HDU 3593 The most powerful force
+http://acm.hdu.edu.cn/showproblem.php?pid=3593
+=====================================================
+超时正确版：
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<list>
+#include<vector>
+using namespace std;
+
+typedef /*unsigned*/ long int UINT;
+
+struct NODE{
+	UINT C,V,F;
+};
+
+list<UINT> edge[501];
+NODE tree[100001];
+UINT N,G;
+
+bool input()
+{
+	UINT i;
+
+	if(scanf("%d %d", &N, &G) == EOF)
+	{
+		return false;
+	}
+	for(i=1;i<=N;i++)
+	{
+		scanf("%d %d %d", &tree[i].C, &tree[i].V, &tree[i].F);
+		if(tree[i].F == i)
+		{
+			tree[i].F = 0;
+		}
+		edge[tree[i].F].push_back(i);
+	}
+
+	return true;
+}
+
+void deal(UINT i, UINT cost, UINT *st) //返回泛化背包st
+{
+	UINT *sub,j;
+	list<UINT>::iterator ptr;
+
+	if((i > 500) || edge[i].empty()) //非士官
+	{
+		return ;
+	}
+
+	for(ptr = edge[i].begin(); ptr != edge[i].end(); ptr++)
+	{
+		if(cost >= tree[*ptr].C)
+		{
+			if((*ptr <= 500) && !edge[*ptr].empty())
+			{
+				sub = new UINT[cost - tree[*ptr].C + 1];
+
+				for(j=0;j<=cost - tree[*ptr].C;j++)
+				{
+					sub[j] = st[j];
+				}
+				deal(*ptr, cost - tree[*ptr].C, sub);
+				for(j=cost;(j>=tree[*ptr].C)&&(j < 10000000);j--) //无符号j太大了说明是负数
+				{
+					st[j] = max(st[j], sub[j - tree[*ptr].C] + tree[*ptr].V);
+				}
+
+				delete [] sub;
+			}else{
+				for(j=cost;(j>=tree[*ptr].C)&&(j < 10000000);j--) //非士官的优化
+				{
+					st[j] = max(st[j], st[j - tree[*ptr].C] + tree[*ptr].V);
+				}
+			}
+		}
+	}
+}
+
+int main()
+{
+	UINT *bag, i;
+
+	while(input())
+	{
+		bag = new UINT[G + 1];
+		for(i=0;i<=G;i++)
+		{
+			bag[i] = 0;
+		}
+		deal(0, G, bag);
+		printf("%ld\n",bag[G]);
+		delete [] bag;
+		for(i=0;i<=500;i++)
+		{
+			edge[i].clear();
+		}
+	}
+	return 0;
+}
+
+==========================================================
+AC版：
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+
+typedef /*unsigned*/ long int UINT;
+
+inline UINT max(UINT a,UINT b){
+    if(a>b) return a;
+    return b;
+}
+
+struct NODE{
+	UINT C,V;
+	UINT chl,bro;
+};
+
+NODE tree[100001];
+UINT N,G;
+UINT dp[501][10001];
+
+bool input()
+{
+	UINT i,F;
+
+	if(scanf("%d %d", &N, &G) == EOF)
+	{
+		return false;
+	}
+	for(i=1;i<=N;i++)
+	{
+		scanf("%d %d %d", &tree[i].C, &tree[i].V, &F);
+		if(F == i)
+		{
+			F = 0;
+		}
+		tree[i].bro = tree[F].chl;
+		tree[F].chl = i;
+	}
+
+	return true;
+}
+
+void deal(UINT i, UINT cost)
+{
+	UINT j,ptr;
+
+	for(ptr = tree[i].chl; ptr != 0; ptr = tree[ptr].bro)
+	{
+		if(cost >= tree[ptr].C)
+		{
+			if(tree[ptr].chl != 0)
+			{
+				for(j=0;j<=cost - tree[ptr].C;j++)
+				{
+					dp[ptr][j] = dp[i][j];
+				}
+				deal(ptr, cost - tree[ptr].C);
+				for(j=cost;j>=tree[ptr].C;j--)
+				{
+					dp[i][j] = max(dp[i][j], dp[ptr][j - tree[ptr].C] + tree[ptr].V);
+				}
+			}else{
+				for(j=cost;j>=tree[ptr].C;j--)
+				{
+					dp[i][j] = max(dp[i][j], dp[i][j - tree[ptr].C] + tree[ptr].V);
+				}
+			}
+		}
+	}
+}
+
+int main()
+{
+	UINT i;
+
+	while(input())
+	{
+		memset(dp[0], 0, sizeof(UINT) * (G + 1));
+		deal(0, G);
+		printf("%ld\n",dp[0][G]);
+		for(i=0;i<=500;i++)
+		{
+			tree[i].chl = 0;
+		}
+	}
+	return 0;
+}

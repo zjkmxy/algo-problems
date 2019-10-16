@@ -1,0 +1,2 @@
+time limit: 3000ms
+memory limit: 65536KB

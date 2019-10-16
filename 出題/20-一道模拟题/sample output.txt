@@ -1,0 +1,16 @@
+15/05/26 3 2
+1: recno1 1
+2: rn2 2
+1: DELETED
+3: 133 125
+4: FAILED
+Count: 4
+Count: 5
+4: 233 2333
+5: 2333 233
+Count: 4
+1: rn2 2
+4: 2333 233
+5: FAILED
+ED0FE5AF
+FAILED
